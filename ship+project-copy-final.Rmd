@@ -1,0 +1,1337 @@
+---
+title: "ship project"
+author: "Ang Li, Shijie Cai, Yukun He, Kailun Huang"
+date: "2017/11/5"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(dplyr)
+library(stringr)
+library(ggmap)
+library(ggplot2)
+
+```
+
+```{r}
+data <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2001/VOSClim_GTS_apr_2001.txt")
+
+df <- NULL
+for (i in 1:length(data)) {
+  tmp <- data[i]
+  subtmp <- paste0(substr(tmp, 1, 21), substr(tmp, 69, 73), substr(tmp, 84, 89))
+  df <- rbind(df, subtmp)
+}
+
+data.clean2001 <- read.fwf(textConnection(df), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2001) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+# First we select the region of mediterranean by latitude and longtitude
+data.med<-subset(data.clean2001, LAT>=3200 & LAT<=4400)
+data.med$LON<-as.numeric(data.med$LON)
+data.med2001<-subset(data.med, LON<= 35 & LON >= -5)
+
+data.med2001 <- select(data.med2001, YR, MO, DY, HR, LAT, LON, AT, SST)
+colnames(data.med2001) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp", "sea_temp")
+
+
+# Then we handle the time difference
+
+data.med2001 <- mutate(data.med2001, team_num = "6")
+data.med2001 <- mutate(data.med2001, reading_type = "ship")
+
+data.med2001 <- mutate(data.med2001, time_diff=hour - 1200)
+
+data.med2001$time_diff[which(data.med2001$time_diff < -600 | data.med2001$time_diff > 600)] <- 9999
+
+data.med2001$time_diff <- as.character(data.med2001$time_diff)
+data.med2001$time_diff[which(data.med2001$time_diff == "9999")] <- "A"
+
+data.med2001$date_time <- paste(data.med2001$year, data.med2001$month, data.med2001$day, sep=" " )
+
+#Using lubridate to generate form as ymdh.
+data.med2001$hour <- str_pad(data.med2001$hour, 4, pad = "0")
+data.med2001$date_time<-ymd(data.med2001$date_time)
+data.med2001$date_time<- paste(data.med2001$date_time, data.med2001$hour)
+data.med2001$date_time<-ymd_hm(data.med2001$date_time)
+
+#Convert temperature to Celsius degree.
+data.med2001$air_temp<-data.med2001$air_temp/10
+data.med2001$sea_temp<-data.med2001$sea_temp/10
+data.med2001$Lat<-data.med2001$Lat/100
+
+#Create the right order as the table showed in the instruction
+data.med2001<-data.med2001[, c(-1:-4)]
+data.med2001.ok<-data.med2001[,c(5,6,7,8,1,2,4,3)]
+
+data.med2001.ok<-na.omit(data.med2001.ok)
+
+data.med2001.ok$Lat<-as.numeric(data.med2001.ok$Lat)
+data.med2001.ok$Lon<-as.numeric(data.med2001.ok$Lon)
+data.med2001.ok$sea_temp<-as.numeric(data.med2001.ok$sea_temp)
+data.med2001.ok$air_temp<-as.numeric(data.med2001.ok$air_temp)
+data.med2001.ok$team_num<-as.integer(data.med2001.ok$team_num)
+
+#We seperate mediterranean sea into 3 parts by latitude, each considered as a source.
+data.med2001.ok11 <- filter(data.med2001.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2001.ok21 <- filter(data.med2001.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2001.ok31 <- filter(data.med2001.ok, Lat >= 40.00 & Lat <= 44.00)
+
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+##no data point for 2001
+##ggmap(map) +
+  ##geom_point(data = data.med2001.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 5, ##shape = 21) +
+  ##guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+```
+
+
+
+
+
+
+```{r}
+data <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2002/VOSClim_GTS_apr_2002.txt")
+
+df <- NULL
+for (i in 1:length(data)) {
+  tmp <- data[i]
+  subtmp <- paste0(substr(tmp, 1, 21), substr(tmp, 69, 73), substr(tmp, 84, 89))
+  df <- rbind(df, subtmp)
+}
+
+data.clean2002 <- read.fwf(textConnection(df), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2002) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+# First we select the region of mediterranean by latitude and longtitude
+data.med<-subset(data.clean2002, LAT>=3200 & LAT<=4400)
+data.med$LON<-as.numeric(data.med$LON)
+data.med2002<-subset(data.med, LON<= 35 & LON >= -5)
+
+data.med2002 <- select(data.med2002, YR, MO, DY, HR, LAT, LON, AT, SST)
+colnames(data.med2002) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp", "sea_temp")
+
+
+# Then we handle the time difference
+
+data.med2002 <- mutate(data.med2002, team_num = "6")
+data.med2002 <- mutate(data.med2002, reading_type = "ship")
+
+data.med2002 <- mutate(data.med2002, time_diff=hour - 1200)
+
+data.med2002$time_diff[which(data.med2002$time_diff < -600 | data.med2002$time_diff > 600)] <- 9999
+
+data.med2002$time_diff <- as.character(data.med2002$time_diff)
+data.med2002$time_diff[which(data.med2002$time_diff == "9999")] <- "A"
+
+data.med2002$date_time <- paste(data.med2002$year, data.med2002$month, data.med2002$day, sep=" " )
+
+#Using lubridate to generate form as ymdh.
+data.med2002$hour <- str_pad(data.med2002$hour, 4, pad = "0")
+data.med2002$date_time<-ymd(data.med2002$date_time)
+data.med2002$date_time<- paste(data.med2002$date_time, data.med2002$hour)
+data.med2002$date_time<-ymd_hm(data.med2002$date_time)
+
+#Convert temperature to Celsius degree.
+data.med2002$air_temp<-data.med2002$air_temp/10
+data.med2002$sea_temp<-data.med2002$sea_temp/10
+data.med2002$Lat<-data.med2002$Lat/100
+
+#Create the right order as the table showed in the instruction
+data.med2002<-data.med2002[, c(-1:-4)]
+data.med2002.ok<-data.med2002[,c(5,6,7,8,1,2,4,3)]
+
+data.med2002.ok<-na.omit(data.med2002.ok)
+
+data.med2002.ok$Lat<-as.numeric(data.med2002.ok$Lat)
+data.med2002.ok$Lon<-as.numeric(data.med2002.ok$Lon)
+data.med2002.ok$sea_temp<-as.numeric(data.med2002.ok$sea_temp)
+data.med2002.ok$air_temp<-as.numeric(data.med2002.ok$air_temp)
+data.med2002.ok$team_num<-as.integer(data.med2002.ok$team_num)
+
+#We seperate mediterranean sea into 3 parts by latitude, each considered as a source.
+data.med2002.ok12 <- filter(data.med2002.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2002.ok22 <- filter(data.med2002.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2002.ok32 <- filter(data.med2002.ok, Lat >= 40.00 & Lat <= 44.00)
+
+
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2002.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 2, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+```
+
+
+
+
+
+```{r}
+data <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2003/VOSClim_GTS_apr_2003.txt")
+
+df <- NULL
+for (i in 1:length(data)) {
+  tmp <- data[i]
+  subtmp <- paste0(substr(tmp, 1, 21), substr(tmp, 69, 73), substr(tmp, 84, 89))
+  df <- rbind(df, subtmp)
+}
+
+data.clean2003 <- read.fwf(textConnection(df), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2003) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+# First we select the region of mediterranean by latitude and longtitude
+data.med<-subset(data.clean2003, LAT>=3200 & LAT<=4400)
+data.med$LON<-as.numeric(data.med$LON)
+data.med2003<-subset(data.med, LON<= 35 & LON >= -5)
+
+data.med2003 <- select(data.med2003, YR, MO, DY, HR, LAT, LON, AT, SST)
+colnames(data.med2003) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp", "sea_temp")
+
+
+# Then we handle the time difference
+
+data.med2003 <- mutate(data.med2003, team_num = "6")
+data.med2003 <- mutate(data.med2003, reading_type = "ship")
+
+data.med2003 <- mutate(data.med2003, time_diff=hour - 1200)
+
+data.med2003$time_diff[which(data.med2003$time_diff < -600 | data.med2002$time_diff > 600)] <- 9999
+
+data.med2003$time_diff <- as.character(data.med2003$time_diff)
+data.med2003$time_diff[which(data.med2003$time_diff == "9999")] <- "A"
+
+data.med2003$date_time <- paste(data.med2003$year, data.med2003$month, data.med2003$day, sep=" " )
+
+#Using lubridate to generate form as ymdh.
+data.med2003$hour <- str_pad(data.med2003$hour, 4, pad = "0")
+data.med2003$date_time<-ymd(data.med2003$date_time)
+data.med2003$date_time<- paste(data.med2003$date_time, data.med2003$hour)
+data.med2003$date_time<-ymd_hm(data.med2003$date_time)
+
+#Convert temperature to Celsius degree.
+data.med2003$air_temp<-data.med2003$air_temp/10
+data.med2003$sea_temp<-data.med2003$sea_temp/10
+data.med2003$Lat<-data.med2003$Lat/100
+
+#Create the right order as the table showed in the instruction
+data.med2003<-data.med2003[, c(-1:-4)]
+data.med2003.ok<-data.med2003[,c(5,6,7,8,1,2,4,3)]
+
+data.med2003.ok<-na.omit(data.med2003.ok)
+
+data.med2003.ok$Lat<-as.numeric(data.med2003.ok$Lat)
+data.med2003.ok$Lon<-as.numeric(data.med2003.ok$Lon)
+data.med2003.ok$sea_temp<-as.numeric(data.med2003.ok$sea_temp)
+data.med2003.ok$air_temp<-as.numeric(data.med2003.ok$air_temp)
+data.med2003.ok$team_num<-as.integer(data.med2003.ok$team_num)
+
+#We seperate mediterranean sea into 3 parts by latitude, each considered as a source.
+data.med2003.ok13 <- filter(data.med2003.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2003.ok23 <- filter(data.med2003.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2003.ok33 <- filter(data.med2003.ok, Lat >= 40.00 & Lat <= 44.00)
+
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2003.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 2, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+```
+
+```{r}
+data <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2004/VOSClim_GTS_apr_2004.txt")
+
+df <- NULL
+for (i in 1:length(data)) {
+  tmp <- data[i]
+  subtmp <- paste0(substr(tmp, 1, 21), substr(tmp, 69, 73), substr(tmp, 84, 89))
+  df <- rbind(df, subtmp)
+}
+
+data.clean2004 <- read.fwf(textConnection(df), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2004) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+# First we select the region of mediterranean by latitude and longtitude
+data.med<-subset(data.clean2004, LAT>=3200 & LAT<=4400)
+data.med$LON<-as.numeric(data.med$LON)
+data.med2004<-subset(data.med, LON<= 35 & LON >= -5)
+
+data.med2004 <- select(data.med2004, YR, MO, DY, HR, LAT, LON, AT, SST)
+colnames(data.med2004) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp", "sea_temp")
+
+
+# Then we handle the time difference
+
+data.med2004 <- mutate(data.med2004, team_num = "6")
+data.med2004 <- mutate(data.med2004, reading_type = "ship")
+
+data.med2004 <- mutate(data.med2004, time_diff=hour - 1200)
+
+data.med2004$time_diff[which(data.med2004$time_diff < -600 | data.med2004$time_diff > 600)] <- 9999
+
+data.med2004$time_diff <- as.character(data.med2004$time_diff)
+data.med2004$time_diff[which(data.med2004$time_diff == "9999")] <- "A"
+
+data.med2004$date_time <- paste(data.med2004$year, data.med2004$month, data.med2004$day, sep=" " )
+
+#Using lubridate to generate form as ymdh.
+data.med2004$hour <- str_pad(data.med2004$hour, 4, pad = "0")
+data.med2004$date_time<-ymd(data.med2004$date_time)
+data.med2004$date_time<- paste(data.med2004$date_time, data.med2004$hour)
+data.med2004$date_time<-ymd_hm(data.med2004$date_time)
+
+#Convert temperature to Celsius degree.
+data.med2004$air_temp<-data.med2004$air_temp/10
+data.med2004$sea_temp<-data.med2004$sea_temp/10
+data.med2004$Lat<-data.med2004$Lat/100
+
+#Create the right order as the table showed in the instruction
+data.med2004<-data.med2004[, c(-1:-4)]
+data.med2004.ok<-data.med2004[,c(5,6,7,8,1,2,4,3)]
+
+data.med2004.ok<-na.omit(data.med2004.ok)
+
+data.med2004.ok$Lat<-as.numeric(data.med2004.ok$Lat)
+data.med2004.ok$Lon<-as.numeric(data.med2004.ok$Lon)
+data.med2004.ok$sea_temp<-as.numeric(data.med2004.ok$sea_temp)
+data.med2004.ok$air_temp<-as.numeric(data.med2004.ok$air_temp)
+data.med2004.ok$team_num<-as.integer(data.med2004.ok$team_num)
+
+#We seperate mediterranean sea into 3 parts by latitude, each considered as a source.
+data.med2004.ok14 <- filter(data.med2004.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2004.ok24 <- filter(data.med2004.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2004.ok34 <- filter(data.med2004.ok, Lat >= 40.00 & Lat <= 44.00)
+
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2004.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 2, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+```
+
+```{r}
+### Read in data
+
+data2005 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2005/VOSClim_GTS_apr_2005.txt")
+
+df5 <- NULL
+for (i in 1:length(data2005)) {
+  tmp5 <- data2005[i]
+  subtmp5 <- paste0(substr(tmp5, 1, 21), substr(tmp5, 69, 73), substr(tmp5, 84, 89))
+  df5 <- rbind(df5, subtmp5)
+}
+
+data.clean2005 <- read.fwf(textConnection(df5), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2005) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+
+
+```
+
+```{r}
+data.med2005<-subset(data.clean2005, LAT>=3200 & LAT<=4400)
+data.med2005$LON<-as.numeric(data.med2005$LON)
+data.med2005<-subset(data.med2005, LON<= 35 & LON >= -5)
+
+
+
+data.med2005<-select(data.med2005,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2005) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2005<-as.data.frame(data.clean2005)
+data.med2005<- arrange(data.med2005,desc(Lat))
+data.med2005 <- mutate(data.med2005, team_num = "6")
+data.med2005 <- mutate(data.med2005, reading_type = "ship")
+data.med2005 <- mutate(data.med2005, time_diff = hour - 1200)
+data.med2005$date_time <- paste(data.med2005$year, data.med2005$month, data.med2005$day, sep="-" ) 
+
+
+data.med2005$hour <- str_pad(data.med2005$hour, 4, pad = "0")
+
+data.med2005$date_time<-ymd(data.med2005$date_time)
+data.med2005$date_time<- paste(data.med2005$date_time, data.med2005$hour)
+
+data.med2005$date_time<-ymd_hm(data.med2005$date_time)
+
+
+
+data.med2005$time_diff[which(data.med2005$time_diff < -600 | data.med2005$time_diff > 600)] <- 999
+data.med2005$time_diff <- as.character(data.med2005$time_diff)
+data.med2005$time_diff[which(data.med2005$time_diff == "999")] <- "A"
+
+data.med2005$air_temp<-(data.med2005$air_temp)/10
+data.med2005$sea_temp<-(data.med2005$sea_temp)/10
+data.med2005$Lat<-(data.med2005$Lat)/100
+
+data.med2005<-data.med2005[, -c(1:4)]
+data.med2005.ok<-data.med2005[,c(5,6,7,8,1,2,4,3)]
+data.med2005.ok<-na.omit(data.med2005.ok)
+
+```
+
+```{r}
+
+data.med2005.ok$team_num<-as.integer(data.med2005.ok$team_num)
+data.med2005.ok$Lat<-as.numeric(data.med2005.ok$Lat)
+data.med2005.ok$Lon<-as.numeric(data.med2005.ok$Lon)
+data.med2005.ok$sea_temp<-as.numeric(data.med2005.ok$sea_temp)
+data.med2005.ok$air_temp<-as.numeric(data.med2005.ok$air_temp)
+
+
+
+data.med2005.ok15 <- filter(data.med2005.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2005.ok25 <- filter(data.med2005.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2005.ok35 <- filter(data.med2005.ok, Lat >= 40.00 & Lat <= 44.00)
+```
+
+```{r}
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2005.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 2, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+
+```
+
+```{r}
+### Read in data
+
+data2006 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2006/VOSClim_GTS_apr_2006.txt")
+
+df6 <- NULL
+for (i in 1:length(data2006)) {
+  tmp6 <- data2006[i]
+  subtmp6 <- paste0(substr(tmp6, 1, 21), substr(tmp6, 69, 73), substr(tmp6, 84, 89))
+  df6 <- rbind(df6, subtmp6)
+}
+
+data.clean2006 <- read.fwf(textConnection(df6), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2006) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+
+
+```
+
+```{r}
+data.med2006<-subset(data.clean2006, LAT>=3200 & LAT<=4400)
+data.med2006$LON<-as.numeric(data.med2006$LON)
+data.med2006<-subset(data.med2006, LON<= 35 & LON >= -5)
+
+
+
+data.med2006<-select(data.med2006,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2006) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2006<-as.data.frame(data.clean2006)
+data.med2006<- arrange(data.med2006,desc(Lat))
+data.med2006 <- mutate(data.med2006, team_num = "6")
+data.med2006 <- mutate(data.med2006, reading_type = "ship")
+data.med2006 <- mutate(data.med2006, time_diff = hour - 1200)
+data.med2006$date_time <- paste(data.med2006$year, data.med2006$month, data.med2006$day, sep="-" ) 
+
+
+data.med2006$hour <- str_pad(data.med2006$hour, 4, pad = "0")
+
+data.med2006$date_time<-ymd(data.med2006$date_time)
+data.med2006$date_time<- paste(data.med2006$date_time, data.med2006$hour)
+
+data.med2006$date_time<-ymd_hm(data.med2006$date_time)
+
+
+
+data.med2006$time_diff[which(data.med2006$time_diff < -600 | data.med2006$time_diff > 600)] <- 999
+data.med2006$time_diff <- as.character(data.med2006$time_diff)
+data.med2006$time_diff[which(data.med2006$time_diff == "999")] <- "A"
+
+data.med2006$air_temp<-(data.med2006$air_temp)/10
+data.med2006$sea_temp<-(data.med2006$sea_temp)/10
+data.med2006$Lat<-(data.med2006$Lat)/100
+
+data.med2006<-data.med2006[, -c(1:4)]
+data.med2006.ok<-data.med2006[,c(5,6,7,8,1,2,4,3)]
+data.med2006.ok<-na.omit(data.med2006.ok)
+
+```
+
+```{r}
+
+data.med2006.ok$team_num<-as.integer(data.med2006.ok$team_num)
+data.med2006.ok$Lat<-as.numeric(data.med2006.ok$Lat)
+data.med2006.ok$Lon<-as.numeric(data.med2006.ok$Lon)
+data.med2006.ok$sea_temp<-as.numeric(data.med2006.ok$sea_temp)
+data.med2006.ok$air_temp<-as.numeric(data.med2006.ok$air_temp)
+
+
+
+data.med2006.ok16 <- filter(data.med2006.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2006.ok26 <- filter(data.med2006.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2006.ok36 <- filter(data.med2006.ok, Lat >= 40.00 & Lat <= 44.00)
+```
+
+```{r}
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2006.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 2, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+
+```
+
+```{r}
+### Read in data
+
+data2007 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2007/VOSClim_GTS_apr_2007.txt")
+
+df7 <- NULL
+for (i in 1:length(data2007)) {
+  tmp7 <- data2007[i]
+  subtmp7 <- paste0(substr(tmp7, 1, 21), substr(tmp7, 69, 73), substr(tmp7, 84, 89))
+  df7 <- rbind(df7, subtmp7)
+}
+
+data.clean2007 <- read.fwf(textConnection(df7), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2007) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+
+
+```
+
+```{r}
+data.med2007<-subset(data.clean2007, LAT>=3200 & LAT<=4400)
+data.med2007$LON<-as.numeric(data.med2007$LON)
+data.med2007<-subset(data.med2007, LON<= 35 & LON >= -5)
+
+
+
+data.med2007<-select(data.med2007,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2007) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2007<-as.data.frame(data.clean2007)
+data.med2007<- arrange(data.med2007,desc(Lat))
+data.med2007 <- mutate(data.med2007, team_num = "6")
+data.med2007 <- mutate(data.med2007, reading_type = "ship")
+data.med2007 <- mutate(data.med2007, time_diff = hour - 1200)
+data.med2007$date_time <- paste(data.med2007$year, data.med2007$month, data.med2007$day, sep="-" ) 
+
+
+data.med2007$hour <- str_pad(data.med2007$hour, 4, pad = "0")
+
+data.med2007$date_time<-ymd(data.med2007$date_time)
+data.med2007$date_time<- paste(data.med2007$date_time, data.med2007$hour)
+
+data.med2007$date_time<-ymd_hm(data.med2007$date_time)
+
+
+
+data.med2007$time_diff[which(data.med2007$time_diff < -600 | data.med2007$time_diff > 600)] <- 999
+data.med2007$time_diff <- as.character(data.med2007$time_diff)
+data.med2007$time_diff[which(data.med2007$time_diff == "999")] <- "A"
+
+data.med2007$air_temp<-(data.med2007$air_temp)/10
+data.med2007$sea_temp<-(data.med2007$sea_temp)/10
+data.med2007$Lat<-(data.med2007$Lat)/100
+
+data.med2007<-data.med2007[, -c(1:4)]
+data.med2007.ok<-data.med2007[,c(5,6,7,8,1,2,4,3)]
+data.med2007.ok<-na.omit(data.med2007.ok)
+
+```
+
+```{r}
+
+data.med2007.ok$team_num<-as.integer(data.med2007.ok$team_num)
+data.med2007.ok$Lat<-as.numeric(data.med2007.ok$Lat)
+data.med2007.ok$Lon<-as.numeric(data.med2007.ok$Lon)
+data.med2007.ok$sea_temp<-as.numeric(data.med2007.ok$sea_temp)
+data.med2007.ok$air_temp<-as.numeric(data.med2007.ok$air_temp)
+
+
+
+data.med2007.ok17 <- filter(data.med2007.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2007.ok27 <- filter(data.med2007.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2007.ok37 <- filter(data.med2007.ok, Lat >= 40.00 & Lat <= 44.00)
+```
+
+```{r}
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2007.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 2, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+
+```
+```{r}
+### Read in data
+
+data2008 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2008/VOSClim_GTS_apr_2008.txt")
+
+df8 <- NULL
+for (i in 1:length(data2008)) {
+  tmp8 <- data2008[i]
+  subtmp8 <- paste0(substr(tmp8, 1, 21), substr(tmp8, 69, 73), substr(tmp8, 84, 89))
+  df8 <- rbind(df8, subtmp8)
+}
+
+data.clean2008 <- read.fwf(textConnection(df8), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2008) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+
+
+```
+
+```{r}
+data.med2008<-subset(data.clean2008, LAT>=3200 & LAT<=4400)
+data.med2008$LON<-as.numeric(data.med2008$LON)
+data.med2008<-subset(data.med2008, LON<= 35 & LON >= -5)
+
+
+
+data.med2008<-select(data.med2008,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2008) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2008<-as.data.frame(data.clean2008)
+data.med2008<- arrange(data.med2008,desc(Lat))
+data.med2008 <- mutate(data.med2008, team_num = "6")
+data.med2008 <- mutate(data.med2008, reading_type = "ship")
+data.med2008 <- mutate(data.med2008, time_diff = hour - 1200)
+data.med2008$date_time <- paste(data.med2008$year, data.med2008$month, data.med2008$day, sep="-" ) 
+
+
+data.med2008$hour <- str_pad(data.med2008$hour, 4, pad = "0")
+
+data.med2008$date_time<-ymd(data.med2008$date_time)
+data.med2008$date_time<- paste(data.med2008$date_time, data.med2008$hour)
+
+data.med2008$date_time<-ymd_hm(data.med2008$date_time)
+
+
+
+data.med2008$time_diff[which(data.med2008$time_diff < -600 | data.med2008$time_diff > 600)] <- 999
+data.med2008$time_diff <- as.character(data.med2008$time_diff)
+data.med2008$time_diff[which(data.med2008$time_diff == "999")] <- "A"
+
+data.med2008$air_temp<-(data.med2008$air_temp)/10
+data.med2008$sea_temp<-(data.med2008$sea_temp)/10
+data.med2008$Lat<-(data.med2008$Lat)/100
+
+data.med2008<-data.med2008[, -c(1:4)]
+data.med2008.ok<-data.med2008[,c(5,6,7,8,1,2,4,3)]
+data.med2008.ok<-na.omit(data.med2008.ok)
+
+```
+
+```{r}
+
+data.med2008.ok$team_num<-as.integer(data.med2008.ok$team_num)
+data.med2008.ok$Lat<-as.numeric(data.med2008.ok$Lat)
+data.med2008.ok$Lon<-as.numeric(data.med2008.ok$Lon)
+data.med2008.ok$sea_temp<-as.numeric(data.med2008.ok$sea_temp)
+data.med2008.ok$air_temp<-as.numeric(data.med2008.ok$air_temp)
+
+
+
+data.med2008.ok18 <- filter(data.med2008.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2008.ok28 <- filter(data.med2008.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2008.ok38 <- filter(data.med2008.ok, Lat >= 40.00 & Lat <= 44.00)
+```
+
+```{r}
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2008.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 2, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+
+```
+
+```{r}
+### Read in data
+
+data2009 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2009/VOSClim_GTS_apr_2009.txt")
+
+df9 <- NULL
+for (i in 1:length(data2009)) {
+  tmp9 <- data2009[i]
+  subtmp9 <- paste0(substr(tmp9, 1, 21), substr(tmp9, 69, 73), substr(tmp9, 84, 89))
+  df9 <- rbind(df9, subtmp9)
+}
+
+data.clean2009 <- read.fwf(textConnection(df9), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2009) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+
+
+```
+
+```{r}
+data.med2009<-subset(data.clean2009, LAT>=3200 & LAT<=4400)
+data.med2009$LON<-as.numeric(data.med2009$LON)
+data.med2009<-subset(data.med2009, LON<= 35 & LON >= -5)
+
+
+
+data.med2009<-select(data.med2009,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2009) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2009<-as.data.frame(data.clean2009)
+data.med2009<- arrange(data.med2009,desc(Lat))
+data.med2009 <- mutate(data.med2009, team_num = "6")
+data.med2009 <- mutate(data.med2009, reading_type = "ship")
+data.med2009 <- mutate(data.med2009, time_diff = hour - 1200)
+data.med2009$date_time <- paste(data.med2009$year, data.med2009$month, data.med2009$day, sep="-" ) 
+
+
+data.med2009$hour <- str_pad(data.med2009$hour, 4, pad = "0")
+
+data.med2009$date_time<-ymd(data.med2009$date_time)
+data.med2009$date_time<- paste(data.med2009$date_time, data.med2009$hour)
+
+data.med2009$date_time<-ymd_hm(data.med2009$date_time)
+
+
+
+data.med2009$time_diff[which(data.med2009$time_diff < -600 | data.med2009$time_diff > 600)] <- 999
+data.med2009$time_diff <- as.character(data.med2009$time_diff)
+data.med2009$time_diff[which(data.med2009$time_diff == "999")] <- "A"
+
+data.med2009$air_temp<-(data.med2009$air_temp)/10
+data.med2009$sea_temp<-(data.med2009$sea_temp)/10
+data.med2009$Lat<-(data.med2009$Lat)/100
+
+data.med2009<-data.med2009[, -c(1:4)]
+data.med2009.ok<-data.med2009[,c(5,6,7,8,1,2,4,3)]
+data.med2009.ok<-na.omit(data.med2009.ok)
+
+```
+
+```{r}
+
+data.med2009.ok$team_num<-as.integer(data.med2009.ok$team_num)
+data.med2009.ok$Lat<-as.numeric(data.med2009.ok$Lat)
+data.med2009.ok$Lon<-as.numeric(data.med2009.ok$Lon)
+data.med2009.ok$sea_temp<-as.numeric(data.med2009.ok$sea_temp)
+data.med2009.ok$air_temp<-as.numeric(data.med2009.ok$air_temp)
+
+
+
+data.med2009.ok19 <- filter(data.med2009.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2009.ok29 <- filter(data.med2009.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2009.ok39 <- filter(data.med2009.ok, Lat >= 40.00 & Lat <= 44.00)
+```
+
+```{r}
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2009.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 2, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+
+```
+
+```{r}
+### Read in data
+
+data2010 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2010/VOSClim_GTS_apr_2010.txt")
+
+df10 <- NULL
+for (i in 1:length(data2010)) {
+  tmp10 <- data2010[i]
+  subtmp10 <- paste0(substr(tmp10, 1, 21), substr(tmp10, 69, 73), substr(tmp10, 84, 89))
+  df10 <- rbind(df10, subtmp10)
+}
+
+data.clean2010 <- read.fwf(textConnection(df10), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2010) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+
+
+```
+
+```{r}
+data.med2010<-subset(data.clean2010, LAT>=3200 & LAT<=4400)
+data.med2010$LON<-as.numeric(data.med2010$LON)
+data.med2010<-subset(data.med2010, LON<= 35 & LON >= -5)
+
+
+
+data.med2010<-select(data.med2010,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2010) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2010<-as.data.frame(data.clean2010)
+data.med2010<- arrange(data.med2010,desc(Lat))
+data.med2010 <- mutate(data.med2010, team_num = "6")
+data.med2010 <- mutate(data.med2010, reading_type = "ship")
+data.med2010 <- mutate(data.med2010, time_diff = hour - 1200)
+data.med2010$date_time <- paste(data.med2010$year, data.med2010$month, data.med2010$day, sep="-" ) 
+
+
+data.med2010$hour <- str_pad(data.med2010$hour, 4, pad = "0")
+
+data.med2010$date_time<-ymd(data.med2010$date_time)
+data.med2010$date_time<- paste(data.med2010$date_time, data.med2010$hour)
+
+data.med2010$date_time<-ymd_hm(data.med2010$date_time)
+
+
+
+data.med2010$time_diff[which(data.med2010$time_diff < -600 | data.med2010$time_diff > 600)] <- 999
+data.med2010$time_diff <- as.character(data.med2010$time_diff)
+data.med2010$time_diff[which(data.med2010$time_diff == "999")] <- "A"
+
+data.med2010$air_temp<-(data.med2010$air_temp)/10
+data.med2010$sea_temp<-(data.med2010$sea_temp)/10
+data.med2010$Lat<-(data.med2010$Lat)/100
+
+data.med2010<-data.med2010[, -c(1:4)]
+data.med2010.ok<-data.med2010[,c(5,6,7,8,1,2,4,3)]
+data.med2010.ok<-na.omit(data.med2010.ok)
+
+```
+
+```{r}
+
+data.med2010.ok$team_num<-as.integer(data.med2010.ok$team_num)
+data.med2010.ok$Lat<-as.numeric(data.med2010.ok$Lat)
+data.med2010.ok$Lon<-as.numeric(data.med2010.ok$Lon)
+data.med2010.ok$sea_temp<-as.numeric(data.med2010.ok$sea_temp)
+data.med2010.ok$air_temp<-as.numeric(data.med2010.ok$air_temp)
+
+
+
+data.med2010.ok110 <- filter(data.med2010.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2010.ok210 <- filter(data.med2010.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2010.ok310 <- filter(data.med2010.ok, Lat >= 40.00 & Lat <= 44.00)
+```
+
+```{r}
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2010.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 2, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+
+```
+
+
+```{r}
+### Read in data
+
+data2011 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2011/VOSClim_GTS_apr_2011.txt")
+
+df11 <- NULL
+for (i in 1:length(data2011)) {
+  tmp11 <- data2011[i]
+  subtmp11 <- paste0(substr(tmp11, 1, 21), substr(tmp11, 69, 73), substr(tmp11, 84, 89))
+  df11 <- rbind(df11, subtmp11)
+}
+
+data.clean2011 <- read.fwf(textConnection(df11), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2011) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+
+
+```
+
+```{r}
+data.med2011<-subset(data.clean2011, LAT>=3200 & LAT<=4400)
+data.med2011$LON<-as.numeric(data.med2011$LON)
+data.med2011<-subset(data.med2011, LON<= 35 & LON >= -5)
+
+
+
+data.med2011<-select(data.med2011,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2011) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2011<-as.data.frame(data.clean2011)
+data.med2011<- arrange(data.med2011,desc(Lat))
+data.med2011 <- mutate(data.med2011, team_num = "6")
+data.med2011 <- mutate(data.med2011, reading_type = "ship")
+data.med2011 <- mutate(data.med2011, time_diff = hour - 1200)
+data.med2011$date_time <- paste(data.med2011$year, data.med2011$month, data.med2011$day, sep="-" ) 
+
+
+data.med2011$hour <- str_pad(data.med2011$hour, 4, pad = "0")
+
+data.med2011$date_time<-ymd(data.med2011$date_time)
+data.med2011$date_time<- paste(data.med2011$date_time, data.med2011$hour)
+
+data.med2011$date_time<-ymd_hm(data.med2011$date_time)
+
+
+
+data.med2011$time_diff[which(data.med2011$time_diff < -600 | data.med2011$time_diff > 600)] <- 999
+data.med2011$time_diff <- as.character(data.med2011$time_diff)
+data.med2011$time_diff[which(data.med2011$time_diff == "999")] <- "A"
+
+data.med2011$air_temp<-(data.med2011$air_temp)/10
+data.med2011$sea_temp<-(data.med2011$sea_temp)/10
+data.med2011$Lat<-(data.med2011$Lat)/100
+
+data.med2011<-data.med2011[, -c(1:4)]
+data.med2011.ok<-data.med2011[,c(5,6,7,8,1,2,4,3)]
+data.med2011.ok<-na.omit(data.med2011.ok)
+
+```
+
+```{r}
+
+data.med2011.ok$team_num<-as.integer(data.med2011.ok$team_num)
+data.med2011.ok$Lat<-as.numeric(data.med2011.ok$Lat)
+data.med2011.ok$Lon<-as.numeric(data.med2011.ok$Lon)
+data.med2011.ok$sea_temp<-as.numeric(data.med2011.ok$sea_temp)
+data.med2011.ok$air_temp<-as.numeric(data.med2011.ok$air_temp)
+
+
+
+data.med2011.ok111 <- filter(data.med2011.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2011.ok211 <- filter(data.med2011.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2011.ok311 <- filter(data.med2011.ok, Lat >= 40.00 & Lat <= 44.00)
+```
+
+```{r}
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2011.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 2, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+```
+
+```{r}
+### Read in data
+
+data2012 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2012/VOSClim_GTS_apr_2012.txt")
+
+df12 <- NULL
+for (i in 1:length(data2012)) {
+  tmp12 <- data2012[i]
+  subtmp12 <- paste0(substr(tmp12, 1, 21), substr(tmp12, 69, 73), substr(tmp12, 84, 89))
+  df12 <- rbind(df12, subtmp12)
+}
+
+data.clean2012 <- read.fwf(textConnection(df12), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2012) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+
+
+```
+
+```{r}
+data.med2012<-subset(data.clean2012, LAT>=3200 & LAT<=4400)
+data.med2012$LON<-as.numeric(data.med2012$LON)
+data.med2012<-subset(data.med2012, LON<= 35 & LON >= -5)
+
+
+
+data.med2012<-select(data.med2012,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2012) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2012<-as.data.frame(data.clean2012)
+data.med2012<- arrange(data.med2012,desc(Lat))
+data.med2012 <- mutate(data.med2012, team_num = "6")
+data.med2012 <- mutate(data.med2012, reading_type = "ship")
+data.med2012 <- mutate(data.med2012, time_diff = hour - 1200)
+data.med2012$date_time <- paste(data.med2012$year, data.med2012$month, data.med2012$day, sep="-" ) 
+
+
+data.med2012$hour <- str_pad(data.med2012$hour, 4, pad = "0")
+
+data.med2012$date_time<-ymd(data.med2012$date_time)
+data.med2012$date_time<- paste(data.med2012$date_time, data.med2012$hour)
+
+data.med2012$date_time<-ymd_hm(data.med2012$date_time)
+
+
+
+data.med2012$time_diff[which(data.med2012$time_diff < -600 | data.med2012$time_diff > 600)] <- 999
+data.med2012$time_diff <- as.character(data.med2012$time_diff)
+data.med2012$time_diff[which(data.med2012$time_diff == "999")] <- "A"
+
+data.med2012$air_temp<-(data.med2012$air_temp)/10
+data.med2012$sea_temp<-(data.med2012$sea_temp)/10
+data.med2012$Lat<-(data.med2012$Lat)/100
+
+data.med2012<-data.med2012[, -c(1:4)]
+data.med2012.ok<-data.med2012[,c(5,6,7,8,1,2,4,3)]
+data.med2012.ok<-na.omit(data.med2012.ok)
+
+```
+
+```{r}
+
+data.med2012.ok$team_num<-as.integer(data.med2012.ok$team_num)
+data.med2012.ok$Lat<-as.numeric(data.med2012.ok$Lat)
+data.med2012.ok$Lon<-as.numeric(data.med2012.ok$Lon)
+data.med2012.ok$sea_temp<-as.numeric(data.med2012.ok$sea_temp)
+data.med2012.ok$air_temp<-as.numeric(data.med2012.ok$air_temp)
+
+
+
+data.med2012.ok112 <- filter(data.med2012.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2012.ok212 <- filter(data.med2012.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2012.ok312 <- filter(data.med2012.ok, Lat >= 40.00 & Lat <= 44.00)
+```
+
+```{r}
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2012.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 2, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+
+```
+
+```{r}
+data2013 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2013/VOSClim_GTS_apr_2013.txt")
+
+df13 <- NULL
+for (i in 1:length(data2013)) {
+  tmp13 <- data2013[i]
+  subtmp13 <- paste0(substr(tmp13, 1, 21), substr(tmp13, 69, 73), substr(tmp13, 84, 89))
+  df13 <- rbind(df13, subtmp13)
+}
+
+data.clean2013 <- read.fwf(textConnection(df13), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2013) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+data.med2013<-subset(data.clean2013, LAT>=3200 & LAT<=4400)
+data.med2013$LON<-as.numeric(data.med2013$LON)
+data.med2013<-subset(data.med2013, LON<= 35 & LON >= -5)
+
+library(dplyr)
+library(stringr)
+data.med2013<-select(data.med2013,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2013) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2013<-as.data.frame(data.clean2013)
+data.med2013<- arrange(data.med2013,desc(Lat))
+data.med2013 <- mutate(data.med2013, team_num = "6")
+data.med2013 <- mutate(data.med2013, reading_type = "ship")
+data.med2013 <- mutate(data.med2013, time_diff = hour - 1200)
+data.med2013$date_time <- paste(data.med2013$year, data.med2013$month, data.med2013$day, sep="-" ) 
+
+
+data.med2013$hour <- str_pad(data.med2013$hour, 4, pad = "0")
+library(lubridate)
+data.med2013$date_time<-ymd(data.med2013$date_time)
+data.med2013$date_time<- paste(data.med2013$date_time, data.med2013$hour)
+
+data.med2013$date_time<-ymd_hm(data.med2013$date_time)
+
+
+
+data.med2013$time_diff[which(data.med2013$time_diff < -600 | data.med2013$time_diff > 600)] <- 999
+data.med2013$time_diff <- as.character(data.med2013$time_diff)
+data.med2013$time_diff[which(data.med2013$time_diff == "999")] <- "A"
+
+data.med2013$air_temp<-(data.med2013$air_temp)/10
+data.med2013$sea_temp<-(data.med2013$sea_temp)/10
+data.med2013$Lat<-data.med2013$Lat/100
+
+data.med2013<-data.med2013[, -c(1:4)]
+data.med2013.ok<-data.med2013[,c(5,6,7,8,1,2,4,3)]
+data.med2013.ok<-na.omit(data.med2013.ok)
+
+library(lubridate)
+
+data.med2013.ok$Lat<-as.numeric(data.med2013.ok$Lat)
+data.med2013.ok$Lon<-as.numeric(data.med2013.ok$Lon)
+data.med2013.ok$sea_temp<-as.numeric(data.med2013.ok$sea_temp)
+data.med2013.ok$air_temp<-as.numeric(data.med2013.ok$air_temp)
+
+
+data.med2013.ok113 <- filter(data.med2013.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2013.ok213 <- filter(data.med2013.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2013.ok313 <- filter(data.med2013.ok, Lat >= 40.00 & Lat <= 44.00)
+
+library(ggmap)
+library(mapproj)
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2013.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+```
+
+```{r}
+data2014 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2014/VOSClim_GTS_apr_2014.txt")
+
+df14 <- NULL
+for (i in 1:length(data2014)) {
+  tmp14 <- data2014[i]
+  subtmp14 <- paste0(substr(tmp14, 1, 21), substr(tmp14, 69, 73), substr(tmp14, 84, 89))
+  df14 <- rbind(df14, subtmp14)
+}
+
+data.clean2014 <- read.fwf(textConnection(df14), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2014) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+data.med2014<-subset(data.clean2014, LAT>=3200 & LAT<=4400)
+data.med2014$LON<-as.numeric(data.med2014$LON)
+data.med2014<-subset(data.med2014, LON<= 35 & LON >= -5)
+
+library(dplyr)
+library(stringr)
+data.med2014<-select(data.med2014,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2014) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2014<-as.data.frame(data.clean2014)
+data.med2014<- arrange(data.med2014,desc(Lat))
+data.med2014 <- mutate(data.med2014, team_num = "6")
+data.med2014 <- mutate(data.med2014, reading_type = "ship")
+data.med2014 <- mutate(data.med2014, time_diff = hour - 1200)
+data.med2014$date_time <- paste(data.med2014$year, data.med2014$month, data.med2014$day, sep="-" ) 
+
+
+data.med2014$hour <- str_pad(data.med2014$hour, 4, pad = "0")
+library(lubridate)
+data.med2014$date_time<-ymd(data.med2014$date_time)
+data.med2014$date_time<- paste(data.med2014$date_time, data.med2014$hour)
+
+data.med2014$date_time<-ymd_hm(data.med2014$date_time)
+
+
+
+data.med2014$time_diff[which(data.med2014$time_diff < -600 | data.med2014$time_diff > 600)] <- 999
+data.med2014$time_diff <- as.character(data.med2014$time_diff)
+data.med2014$time_diff[which(data.med2014$time_diff == "999")] <- "A"
+
+data.med2014$air_temp<-(data.med2014$air_temp)/10
+data.med2014$sea_temp<-(data.med2014$sea_temp)/10
+data.med2014$Lat<-data.med2014$Lat/100
+
+data.med2014<-data.med2014[, -c(1:4)]
+data.med2014.ok<-data.med2014[,c(5,6,7,8,1,2,4,3)]
+data.med2014.ok<-na.omit(data.med2014.ok)
+
+library(lubridate)
+
+data.med2014.ok$Lat<-as.numeric(data.med2014.ok$Lat)
+data.med2014.ok$Lon<-as.numeric(data.med2014.ok$Lon)
+data.med2014.ok$sea_temp<-as.numeric(data.med2014.ok$sea_temp)
+data.med2014.ok$air_temp<-as.numeric(data.med2014.ok$air_temp)
+
+
+data.med2014.ok114 <- filter(data.med2014.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2014.ok214 <- filter(data.med2014.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2014.ok314 <- filter(data.med2014.ok, Lat >= 40.00 & Lat <= 44.00)
+
+library(ggmap)
+library(mapproj)
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2014.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+
+```
+
+```{r}
+data2015 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2015/VOSClim_GTS_apr_2015.txt")
+
+df15 <- NULL
+for (i in 1:length(data2015)) {
+  tmp15 <- data2015[i]
+  subtmp15 <- paste0(substr(tmp15, 1, 21), substr(tmp15, 69, 73), substr(tmp15, 84, 89))
+  df15 <- rbind(df15, subtmp15)
+}
+
+data.clean2015 <- read.fwf(textConnection(df15), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2015) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+data.med2015<-subset(data.clean2015, LAT>=3200 & LAT<=4400)
+data.med2015$LON<-as.numeric(data.med2015$LON)
+data.med2015<-subset(data.med2015, LON<= 35 & LON >= -5)
+
+library(dplyr)
+library(stringr)
+data.med2015<-select(data.med2015,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2015) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2015<-as.data.frame(data.clean2015)
+data.med2015<- arrange(data.med2015,desc(Lat))
+data.med2015 <- mutate(data.med2015, team_num = "6")
+data.med2015 <- mutate(data.med2015, reading_type = "ship")
+data.med2015 <- mutate(data.med2015, time_diff = hour - 1200)
+data.med2015$date_time <- paste(data.med2015$year, data.med2015$month, data.med2015$day, sep="-" ) 
+
+
+data.med2015$hour <- str_pad(data.med2015$hour, 4, pad = "0")
+library(lubridate)
+data.med2015$date_time<-ymd(data.med2015$date_time)
+data.med2015$date_time<- paste(data.med2015$date_time, data.med2015$hour)
+
+data.med2015$date_time<-ymd_hm(data.med2015$date_time)
+
+
+
+data.med2015$time_diff[which(data.med2015$time_diff < -600 | data.med2015$time_diff > 600)] <- 999
+data.med2015$time_diff <- as.character(data.med2015$time_diff)
+data.med2015$time_diff[which(data.med2015$time_diff == "999")] <- "A"
+
+data.med2015$air_temp<-(data.med2015$air_temp)/10
+data.med2015$sea_temp<-(data.med2015$sea_temp)/10
+data.med2015$Lat<-data.med2015$Lat/100
+
+data.med2015<-data.med2015[, -c(1:4)]
+data.med2015.ok<-data.med2015[,c(5,6,7,8,1,2,4,3)]
+data.med2015.ok<-na.omit(data.med2015.ok)
+
+library(lubridate)
+
+data.med2015.ok$Lat<-as.numeric(data.med2015.ok$Lat)
+data.med2015.ok$Lon<-as.numeric(data.med2015.ok$Lon)
+data.med2015.ok$sea_temp<-as.numeric(data.med2015.ok$sea_temp)
+data.med2015.ok$air_temp<-as.numeric(data.med2015.ok$air_temp)
+
+
+data.med2015.ok115 <- filter(data.med2015.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2015.ok215 <- filter(data.med2015.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2015.ok315 <- filter(data.med2015.ok, Lat >= 40.00 & Lat <= 44.00)
+
+library(ggmap)
+library(mapproj)
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2015.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+
+
+
+
+```
+
+```{r}
+
+data2016 <- readLines("https://www1.ncdc.noaa.gov/pub/data/vosclim/2016/VOSClim_GTS_apr_2016.txt")
+
+df16 <- NULL
+for (i in 1:length(data2016)) {
+  tmp16 <- data2016[i]
+  subtmp16 <- paste0(substr(tmp16, 1, 21), substr(tmp16, 69, 73), substr(tmp16, 84, 89))
+  df16 <- rbind(df16, subtmp16)
+}
+
+data.clean2016 <- read.fwf(textConnection(df16), widths=c(4,2,2,4,5,4,1,4,2,4))
+names(data.clean2016) <- c("YR", "MO", "DY", "HR", "LAT", "LON", "IT", "AT", "SI", "SST")
+data.med2016<-subset(data.clean2016, LAT>=3200 & LAT<=4400)
+data.med2016$LON<-as.numeric(data.med2016$LON)
+data.med2016<-subset(data.med2016, LON<= 35 & LON >= -5)
+
+library(dplyr)
+library(stringr)
+data.med2016<-select(data.med2016,YR,MO,DY,HR,LAT,LON,AT,SST)
+colnames(data.med2016) <- c("year", "month", "day", "hour", "Lat", "Lon", "air_temp","sea_temp")
+
+data.clean2016<-as.data.frame(data.clean2016)
+data.med2016<- arrange(data.med2016,desc(Lat))
+data.med2016 <- mutate(data.med2016, team_num = "6")
+data.med2016 <- mutate(data.med2016, reading_type = "ship")
+data.med2016 <- mutate(data.med2016, time_diff = hour - 1200)
+data.med2016$date_time <- paste(data.med2016$year, data.med2016$month, data.med2016$day, sep="-" ) 
+
+
+data.med2016$hour <- str_pad(data.med2016$hour, 4, pad = "0")
+library(lubridate)
+data.med2016$date_time<-ymd(data.med2016$date_time)
+data.med2016$date_time<- paste(data.med2016$date_time, data.med2016$hour)
+
+data.med2016$date_time<-ymd_hm(data.med2016$date_time)
+
+
+
+data.med2016$time_diff[which(data.med2016$time_diff < -600 | data.med2016$time_diff > 600)] <- 999
+data.med2016$time_diff <- as.character(data.med2016$time_diff)
+data.med2016$time_diff[which(data.med2016$time_diff == "999")] <- "A"
+
+data.med2016$air_temp<-(data.med2016$air_temp)/10
+data.med2016$sea_temp<-(data.med2016$sea_temp)/10
+data.med2016$Lat<-data.med2016$Lat/100
+
+data.med2016<-data.med2016[, -c(1:4)]
+data.med2016.ok<-data.med2016[,c(5,6,7,8,1,2,4,3)]
+data.med2016.ok<-na.omit(data.med2016.ok)
+
+library(lubridate)
+
+data.med2016.ok$Lat<-as.numeric(data.med2016.ok$Lat)
+data.med2016.ok$Lon<-as.numeric(data.med2016.ok$Lon)
+data.med2016.ok$sea_temp<-as.numeric(data.med2016.ok$sea_temp)
+data.med2016.ok$air_temp<-as.numeric(data.med2016.ok$air_temp)
+
+
+data.med2016.ok116 <- filter(data.med2016.ok, Lat >= 32.00 & Lat < 36.00)
+data.med2016.ok216 <- filter(data.med2016.ok, Lat >= 36.00 & Lat < 40.00)
+data.med2016.ok316 <- filter(data.med2016.ok, Lat >= 40.00 & Lat <= 44.00)
+
+library(ggmap)
+library(mapproj)
+map <- get_map(location = 'mediterranean sea', zoom = 4)
+
+ggmap(map) +
+  geom_point(data = data.med2016.ok, aes(x = Lon, y = Lat, fill = "red", alpha = 0.8), size = 1, shape = 21) +
+  guides(fill=FALSE, alpha=FALSE, size=FALSE)
+```
+
+```{r}
+#binding all three parts of data.
+tempdata_source1 <- rbind(data.med2002.ok12,data.med2003.ok13,data.med2004.ok14,data.med2005.ok15,data.med2006.ok16,data.med2007.ok17,data.med2008.ok18,data.med2009.ok19,data.med2010.ok110,data.med2011.ok111,data.med2012.ok112,data.med2013.ok113,data.med2014.ok114,data.med2015.ok115,data.med2016.ok116)
+
+tempdata_source2 <- rbind(data.med2002.ok22,data.med2003.ok23,data.med2004.ok24,data.med2005.ok25,data.med2006.ok26,data.med2007.ok27,data.med2008.ok28,data.med2009.ok29,data.med2010.ok210,data.med2011.ok211,data.med2012.ok212,data.med2013.ok213,data.med2014.ok214,data.med2015.ok215,data.med2016.ok216)
+
+tempdata_source3 <- rbind(data.med2002.ok32,data.med2003.ok33,data.med2004.ok34,data.med2005.ok35,data.med2006.ok36,data.med2007.ok37,data.med2008.ok38,data.med2009.ok39,data.med2010.ok310,data.med2011.ok311,data.med2012.ok312,data.med2013.ok313,data.med2014.ok314,data.med2015.ok315,data.med2016.ok316)
+
+```
+
+```{r}
+p1air <- ggplot(tempdata_source1, aes(x=date_time, y=Lat, color=air_temp)) +
+    geom_point(size=6, alpha=0.6)
+p1air
+
+```
+```{r}
+
+p2air <- ggplot(tempdata_source2, aes(x=date_time, y=Lat, color=sea_temp)) +
+    geom_point(size=6, alpha=0.6)
+p2air
+
+```
+
+```{r}
+
+p3air <- ggplot(tempdata_source3, aes(x=date_time, y=Lat, color=sea_temp)) +
+    geom_point(size=6, alpha=0.6)
+p3air
+
+```
+
+```{r}
+
+p1sea <- ggplot(tempdata_source1, aes(x=date_time, y=Lat, color=sea_temp)) +
+    geom_point(size=6, alpha=0.6)
+p1sea
+
+```
+
+```{r}
+
+p2sea <- ggplot(tempdata_source2, aes(x=date_time, y=Lat, color=sea_temp)) +
+    geom_point(size=6, alpha=0.6)
+p2sea
+
+```
+
+```{r}
+
+p3sea <- ggplot(tempdata_source3, aes(x=date_time, y=Lat, color=sea_temp)) +
+    geom_point(size=6, alpha=0.6)
+p3sea
+
+```
+
+```{r}
+write.csv(tempdata_source1, file="615temp1.csv")
+write.csv(tempdata_source2, file="615temp2.csv")
+write.csv(tempdata_source3, file="615temp3.csv")
+
+```
+
+
